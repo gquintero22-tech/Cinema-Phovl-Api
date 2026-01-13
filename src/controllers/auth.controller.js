@@ -1,44 +1,61 @@
 const pool = require("../config/db");
-const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
+/* REGISTRO */
 exports.register = async (req, res) => {
-  const { name, email, password } = req.body;
+  const { nombre, email, telefono, password } = req.body;
 
-  const hash = await bcrypt.hash(password, 10);
+  if (!nombre || !email || !password) {
+    return res.status(400).json({ error: "Datos incompletos" });
+  }
 
-  await pool.query(
-    "INSERT INTO users(name, email, password_hash) VALUES ($1,$2,$3)",
-    [name, email, hash]
-  );
+  try {
+    await pool.query(
+      `INSERT INTO usuario (nombre, email, telefono, password)
+       VALUES ($1, $2, $3, $4)`,
+      [nombre, email, telefono || null, password]
+    );
 
-  res.json({ message: "Usuario registrado" });
+    res.json({ message: "Usuario registrado correctamente" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al registrar usuario" });
+  }
 };
 
+/* LOGIN */
 exports.login = async (req, res) => {
   const { email, password } = req.body;
 
-  const result = await pool.query(
-    "SELECT * FROM users WHERE email=$1",
-    [email]
-  );
+  try {
+    const result = await pool.query(
+      `SELECT * FROM usuario
+       WHERE email = $1 AND password = $2`,
+      [email, password]
+    );
 
-  if (!result.rows.length) {
-    return res.status(401).json({ error: "Credenciales incorrectas" });
+    if (!result.rows.length) {
+      return res.status(401).json({ error: "Credenciales incorrectas" });
+    }
+
+    const user = result.rows[0];
+
+    const token = jwt.sign(
+      {
+        id_usuario: user.id_usuario,
+        email: user.email
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
+
+    res.json({
+      token,
+      name: user.nombre,
+      email: user.email
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al iniciar sesión" });
   }
-
-  const user = result.rows[0];
-  const valid = await bcrypt.compare(password, user.password_hash);
-
-  if (!valid) {
-    return res.status(401).json({ error: "Credenciales incorrectas" });
-  }
-
-  const token = jwt.sign(
-    { id: user.id, email: user.email },
-    process.env.JWT_SECRET,
-    { expiresIn: "1d" }
-  );
-
-  res.json({ token, name: user.name, email: user.email });
 };
