@@ -1,14 +1,25 @@
 const pool = require("../config/db");
 
-exports.getByMovie = async (req, res) => {
-  const { id_pelicula } = req.params;
+exports.getByMovieSucursalFecha = async (req, res) => {
+  try {
+    const { id_pelicula, id_sucursal, fecha } = req.params;
 
-  const result = await pool.query(`
-    SELECT f.*, s.nombre AS sala
-    FROM funcion f
-    JOIN sala s ON f.id_sala = s.id_sala
-    WHERE id_pelicula = $1
-  `, [id_pelicula]);
+    const result = await pool.query(`
+      SELECT 
+        f.id_funcion,
+        f.hora_inicio,
+        f.idioma,
+        s.nombre AS sala
+      FROM funcion f
+      JOIN sala s ON f.id_sala = s.id_sala
+      WHERE f.id_pelicula = $1
+        AND s.id_sucursal = $2
+        AND f.fecha = $3
+      ORDER BY f.hora_inicio
+    `, [id_pelicula, id_sucursal, fecha]);
 
-  res.json(result.rows);
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: "Error al obtener funciones" });
+  }
 };
