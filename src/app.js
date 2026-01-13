@@ -2,21 +2,16 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 
-const authRoutes = require("./routes/auth.routes");
-const moviesRoutes = require("./routes/movies.routes");
-const purchasesRoutes = require("./routes/purchases.routes");
-
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-app.use("/api/auth", authRoutes);
-app.use("/api/movies", moviesRoutes);
-app.use("/api/purchases", purchasesRoutes);
-
-app.get("/", (req, res) => {
-  res.send("🎬 Cinema PHOVL API funcionando");
-});
+// Rutas
+app.use("/api/auth", require("./routes/auth.routes"));
+app.use("/api/peliculas", require("./routes/peliculas.routes"));
+app.use("/api/sucursales", require("./routes/sucursales.routes"));
+app.use("/api/funciones", require("./routes/funciones.routes"));
+app.use("/api/tickets", require("./routes/tickets.routes"));
 
 module.exports = app;
