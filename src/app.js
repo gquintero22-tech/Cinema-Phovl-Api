@@ -14,5 +14,7 @@ app.use("/api/sucursales", require("./routes/sucursales.routes"));
 app.use("/api/funciones", require("./routes/funciones.routes"));
 app.use("/api/tickets", require("./routes/tickets.routes"));
 app.use("/api/asientos", require("./routes/asiento.routes"));
+app.use("/api/salas", require("./routes/salas.routes"));
+
 
 module.exports = app;
