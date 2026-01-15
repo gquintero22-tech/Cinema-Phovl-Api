@@ -7,8 +7,6 @@ exports.comprar = async (req, res) => {
   try {
     await pool.query("BEGIN");
 
-    const tickets = []; 
-
     for (const id_asiento of id_asientos) {
 
       const ocupado = await pool.query(`
@@ -25,25 +23,32 @@ exports.comprar = async (req, res) => {
         });
       }
 
-      const codigo_qr = crypto.randomUUID(); 
-
       await pool.query(`
         INSERT INTO ticket (id_funcion, id_asiento, id_usuario, estado, codigo_qr)
         VALUES ($1,$2,$3,'pagado',$4)
-      `, [id_funcion, id_asiento, id_usuario, codigo_qr]);
-
-      tickets.push({                     
-        id_funcion,
-        id_asiento,
-        codigo_qr
-      });
+      `, [id_funcion, id_asiento, id_usuario, crypto.randomUUID()]);
     }
 
     await pool.query("COMMIT");
 
-    res.json({                           
+    // 🔥 DEVOLVER TICKETS CON INFO COMPLETA
+    const tickets = await pool.query(`
+      SELECT 
+        t.id_asiento,
+        t.codigo_qr,
+        p.titulo AS pelicula,
+        f.hora
+      FROM ticket t
+      JOIN funcion f ON t.id_funcion = f.id_funcion
+      JOIN pelicula p ON f.id_pelicula = p.id_pelicula
+      WHERE t.id_usuario = $1
+      ORDER BY t.id_ticket DESC
+      LIMIT $2
+    `, [id_usuario, id_asientos.length]);
+
+    res.json({
       message: "Compra exitosa",
-      tickets
+      tickets: tickets.rows
     });
 
   } catch (err) {
