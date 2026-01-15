@@ -7,6 +7,7 @@ exports.getByMovieSucursalFecha = async (req, res) => {
     const result = await pool.query(`
       SELECT 
         f.id_funcion,
+        f.id_sala,
         f.hora_inicio,
         f.idioma,
         s.nombre AS sala
