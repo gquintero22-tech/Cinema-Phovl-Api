@@ -7,6 +7,8 @@ exports.comprar = async (req, res) => {
   try {
     await pool.query("BEGIN");
 
+    const tickets = []; 
+
     for (const id_asiento of id_asientos) {
 
       const ocupado = await pool.query(`
@@ -23,17 +25,30 @@ exports.comprar = async (req, res) => {
         });
       }
 
+      const codigo_qr = crypto.randomUUID(); 
+
       await pool.query(`
         INSERT INTO ticket (id_funcion, id_asiento, id_usuario, estado, codigo_qr)
         VALUES ($1,$2,$3,'pagado',$4)
-      `, [id_funcion, id_asiento, id_usuario, crypto.randomUUID()]);
+      `, [id_funcion, id_asiento, id_usuario, codigo_qr]);
+
+      tickets.push({                     
+        id_funcion,
+        id_asiento,
+        codigo_qr
+      });
     }
 
     await pool.query("COMMIT");
-    res.json({ message: "Compra exitosa" });
+
+    res.json({                           
+      message: "Compra exitosa",
+      tickets
+    });
 
   } catch (err) {
     await pool.query("ROLLBACK");
+    console.error(err);
     res.status(500).json({ error: "Error al procesar la compra" });
   }
 };
