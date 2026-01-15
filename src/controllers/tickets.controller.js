@@ -31,13 +31,13 @@ exports.comprar = async (req, res) => {
 
     await pool.query("COMMIT");
 
-    // 🔥 DEVOLVER TICKETS CON INFO COMPLETA
     const tickets = await pool.query(`
       SELECT 
         t.id_asiento,
         t.codigo_qr,
         p.titulo AS pelicula,
-        f.hora
+        f.fecha,
+        f.hora_inicio
       FROM ticket t
       JOIN funcion f ON t.id_funcion = f.id_funcion
       JOIN pelicula p ON f.id_pelicula = p.id_pelicula
