@@ -24,10 +24,15 @@ exports.comprar = async (req, res) => {
       }
 
       await pool.query(`
-        INSERT INTO ticket (id_funcion, id_asiento, id_usuario, estado, codigo_qr)
-        VALUES ($1,$2,$3,'pagado',$4)
-      `, [id_funcion, id_asiento, id_usuario, crypto.randomUUID()]);
-    }
+        INSERT INTO ticket (id_funcion, id_asiento, fila, id_usuario, estado, codigo_qr)
+        VALUES ($1,$2,$3,$4,'pagado',$5)
+      `, [
+        id_funcion,
+        id_asiento,
+        fila,
+        id_usuario,
+        crypto.randomUUID()
+      ]);
 
     await pool.query("COMMIT");
 
