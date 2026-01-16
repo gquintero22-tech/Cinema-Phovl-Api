@@ -10,12 +10,15 @@ exports.comprar = async (req, res) => {
     for (const asiento of id_asientos) {
       const { id_asiento, fila } = asiento;
 
-      const ocupado = await pool.query(`
+      const ocupado = await pool.query(
+        `
         SELECT 1 FROM ticket
         WHERE id_funcion = $1
           AND id_asiento = $2
           AND estado = 'pagado'
-      `, [id_funcion, id_asiento]);
+        `,
+        [id_funcion, id_asiento]
+      );
 
       if (ocupado.rowCount > 0) {
         await pool.query("ROLLBACK");
@@ -24,23 +27,30 @@ exports.comprar = async (req, res) => {
         });
       }
 
-      await pool.query(`
-        INSERT INTO ticket (id_funcion, id_asiento, fila, id_usuario, estado, codigo_qr)
-        VALUES ($1,$2,$3,$4,'pagado',$5)
-      `, [
-        id_funcion,
-        id_asiento,
-        fila,
-        id_usuario,
-        crypto.randomUUID()
-      ]);
+      await pool.query(
+        `
+        INSERT INTO ticket
+        (id_funcion, id_asiento, fila, id_usuario, estado, codigo_qr)
+        VALUES ($1, $2, $3, $4, 'pagado', $5)
+        `,
+        [
+          id_funcion,
+          id_asiento,
+          fila,
+          id_usuario,
+          crypto.randomUUID()
+        ]
+      );
     }
 
     await pool.query("COMMIT");
 
-    const tickets = await pool.query(`
-        SELECT 
+    // 🔥 AQUÍ ESTABA EL PROBLEMA: faltaba fila
+    const tickets = await pool.query(
+      `
+      SELECT 
         t.id_asiento,
+        t.fila,
         t.codigo_qr,
         p.titulo AS pelicula,
         f.fecha,
@@ -51,16 +61,20 @@ exports.comprar = async (req, res) => {
       WHERE t.id_usuario = $1
       ORDER BY t.id_ticket DESC
       LIMIT $2
-    `, [id_usuario, id_asientos.length]);
+      `,
+      [id_usuario, id_asientos.length]
+    );
 
-    res.json({
+    return res.json({
       message: "Compra exitosa",
       tickets: tickets.rows
     });
 
   } catch (err) {
     await pool.query("ROLLBACK");
-    console.error(err);
-    res.status(500).json({ error: "Error al procesar la compra" });
+    console.error("❌ ERROR COMPRA:", err.message);
+    return res.status(500).json({
+      error: "Error al procesar la compra"
+    });
   }
 };
