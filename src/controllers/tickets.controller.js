@@ -7,9 +7,9 @@ exports.comprar = async (req, res) => {
   try {
     await pool.query("BEGIN");
 
-    for (const asiento of id_asientos) {
-      const { id_asiento, fila } = asiento;
+    for (const id_asiento of id_asientos) {
 
+      // Verificar si el asiento ya está ocupado
       const ocupado = await pool.query(
         `
         SELECT 1 FROM ticket
@@ -27,16 +27,16 @@ exports.comprar = async (req, res) => {
         });
       }
 
+      // Insertar ticket
       await pool.query(
         `
         INSERT INTO ticket
-        (id_funcion, id_asiento, fila, id_usuario, estado, codigo_qr)
-        VALUES ($1, $2, $3, $4, 'pagado', $5)
+        (id_funcion, id_asiento, id_usuario, estado, codigo_qr)
+        VALUES ($1, $2, $3, 'pagado', $4)
         `,
         [
           id_funcion,
           id_asiento,
-          fila,
           id_usuario,
           crypto.randomUUID()
         ]
@@ -45,12 +45,11 @@ exports.comprar = async (req, res) => {
 
     await pool.query("COMMIT");
 
-    // 🔥 AQUÍ ESTABA EL PROBLEMA: faltaba fila
+    // Obtener tickets recién comprados
     const tickets = await pool.query(
       `
       SELECT 
         t.id_asiento,
-        t.fila,
         t.codigo_qr,
         p.titulo AS pelicula,
         f.fecha,
@@ -65,15 +64,15 @@ exports.comprar = async (req, res) => {
       [id_usuario, id_asientos.length]
     );
 
-    return res.json({
+    res.json({
       message: "Compra exitosa",
       tickets: tickets.rows
     });
 
   } catch (err) {
     await pool.query("ROLLBACK");
-    console.error("❌ ERROR COMPRA:", err.message);
-    return res.status(500).json({
+    console.error("❌ ERROR COMPRA:", err);
+    res.status(500).json({
       error: "Error al procesar la compra"
     });
   }
