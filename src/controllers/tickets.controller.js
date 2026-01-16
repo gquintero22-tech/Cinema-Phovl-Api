@@ -39,9 +39,8 @@ exports.comprar = async (req, res) => {
     await pool.query("COMMIT");
 
     const tickets = await pool.query(`
-      SELECT 
+        SELECT 
         t.id_asiento,
-        t.fila,
         t.codigo_qr,
         p.titulo AS pelicula,
         f.fecha,
