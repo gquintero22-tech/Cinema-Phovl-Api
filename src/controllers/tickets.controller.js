@@ -32,19 +32,21 @@ exports.comprar = async (req, res) => {
     await pool.query("COMMIT");
 
     const tickets = await pool.query(`
-      SELECT 
-        t.id_asiento,
-        t.codigo_qr,
-        p.titulo AS pelicula,
-        f.fecha,
-        f.hora_inicio
-      FROM ticket t
-      JOIN funcion f ON t.id_funcion = f.id_funcion
-      JOIN pelicula p ON f.id_pelicula = p.id_pelicula
-      WHERE t.id_usuario = $1
-      ORDER BY t.id_ticket DESC
-      LIMIT $2
-    `, [id_usuario, id_asientos.length]);
+    SELECT 
+      t.id_asiento,
+      a.fila,
+      t.codigo_qr,
+      p.titulo AS pelicula,
+      f.fecha,
+      f.hora_inicio
+    FROM ticket t
+    JOIN funcion f ON t.id_funcion = f.id_funcion
+    JOIN pelicula p ON f.id_pelicula = p.id_pelicula
+    JOIN asiento a ON t.id_asiento = a.id_asiento
+    WHERE t.id_usuario = $1
+    ORDER BY t.id_ticket DESC
+    LIMIT $2
+  `, [id_usuario, id_asientos.length]);
 
     res.json({
       message: "Compra exitosa",
